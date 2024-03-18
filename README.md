@@ -16,7 +16,7 @@
 
 2. Start the game for BepInEx to create some extra directories
 
-2. Copy the contents of DifficultClimbingVRM.zip into the `.../Getting Over It/BepInEx/plugins/` directory
+2. Copy the contents of DifficultClimbingVRM.zip into the `.../A Difficult Game About Climbing/BepInEx/plugins/` directory
 
 ## Adding custom player models (wip tutorial)
 After running the game once after installing the mod the game should create a `VRM` folder for you in the game directory (configurable in `\BepInEx\config\com.jor02.plugins.difficultclimbingvrm.cfg`)
