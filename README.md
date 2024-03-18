@@ -18,5 +18,12 @@
 
 2. Copy the contents of DifficultClimbingVRM.zip into the `.../Getting Over It/BepInEx/plugins/` directory
 
+## Adding custom player models (wip tutorial)
+After running the game once after installing the mod the game should create a `VRM` folder for you in the game directory (configurable in `\BepInEx\config\com.jor02.plugins.difficultclimbingvrm.cfg`)
+<br/>![VRM Folder Preview](./Images/VrmFolder.png)<br/>
+This is where you can put the models you'd like to use ([you can download an example model here](https://github.com/madjin/vrm-samples/raw/master/vroid/stable/AvatarSample_B.vrm))
+
+Since I do not have any in-game gui made yet, you currently have to manually change the `CurrentCharacter` setting in your `\BepInEx\config\com.jor02.plugins.difficultclimbingvrm.cfg` file when you want to change your current player model.
+
 ## Third Party Licenses
 [UniVRM](https://github.com/vrm-c/UniVRM) is licensed under the [MIT License](https://github.com/vrm-c/UniVRM/blob/master/LICENSE.txt).
