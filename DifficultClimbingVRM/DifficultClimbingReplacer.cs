@@ -7,7 +7,6 @@ using HarmonyLib;
 using System.Threading.Tasks;
 using System.Collections;
 using System.Linq;
-using UniGLTF.Extensions.VRMC_vrm;
 
 namespace DifficultClimbingVRM;
 
@@ -158,7 +157,6 @@ public class DifficultClimbingReplacer : BaseUnityPlugin
         cloth.SetActive(true);
     }
 
-
     /// <remarks>
     /// WIP Not Finished
     /// </remarks>
@@ -175,6 +173,8 @@ public class DifficultClimbingReplacer : BaseUnityPlugin
             color.g *= brightness;
             color.b *= brightness;
             material.SetColor("_Color", color);
+
+            material.renderQueue = 1982;
         }
     }
 
