@@ -83,6 +83,9 @@ namespace DifficultClimbingVRM
         // Ajustments
         public ConfigEntry<float> Scale { get; }
 
+        // Material Settings
+        public ConfigEntry<float> MaterialBrightness { get; }
+
         // Crown
         public ConfigEntry<bool> AllowCrown { get; }
         public ConfigEntry<Vector3> CrownPosition { get; }
@@ -102,6 +105,8 @@ namespace DifficultClimbingVRM
             Name = modelSettings.Bind("Info", nameof(Name), Path.GetFileNameWithoutExtension(path), "The name displayed in-game");
             OffsetEntireModel = modelSettings.Bind("Customization.Fixes", nameof(OffsetEntireModel), false, "Moves the whole player forward to prevent weird arm bends (will make shadows not match correctly)");
             Scale = modelSettings.Bind("Customization.Adjustments", nameof(Scale), 1f, "The model scale multiplier");
+            
+            MaterialBrightness = modelSettings.Bind("Customization.Materials", nameof(MaterialBrightness), 0.8f, "The brightness that all materials will be multiplied by");
 
             AllowCrown = modelSettings.Bind("Customization.Adjustments.Crown", nameof(AllowCrown), true, "Is the game allowed to turn on the crown?");
             CrownPosition = modelSettings.Bind("Customization.Adjustments.Crown", nameof(CrownPosition), new Vector3(0, 1.462f, -0.065f), "The position the crown is set to");

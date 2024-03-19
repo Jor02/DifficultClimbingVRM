@@ -128,7 +128,7 @@ public class DifficultClimbingReplacer : BaseUnityPlugin
         instance!.name = currentPlayerModel.Name.Value;
 
         // Default toon shaders don't work that well in-game.
-        FixMaterials(instance);
+        FixMaterials(currentPlayerModel, instance);
 
         // Get height of the imported model.
         Vector3 p1 = new Vector3(0, instance.Humanoid.Head.position.y, 0);
@@ -202,9 +202,9 @@ public class DifficultClimbingReplacer : BaseUnityPlugin
     /// <remarks>
     /// WIP Not Finished
     /// </remarks>
-    private static void FixMaterials(Vrm10Instance instance)
+    private static void FixMaterials(CustomPlayerModel model, Vrm10Instance instance)
     {
-        const float brightness = .8f;
+        float brightness = model.MaterialBrightness.Value;
         foreach (var material in instance
         .GetComponentsInChildren<Renderer>()
         .SelectMany(renderer => renderer.materials)
