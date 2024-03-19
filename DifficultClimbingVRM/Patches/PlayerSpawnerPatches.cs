@@ -2,14 +2,14 @@
 using HarmonyLib;
 using UnityEngine;
 
-namespace DifficultClimbingVRM
+namespace DifficultClimbingVRM.Patches
 {
     internal static class PlayerSpawnerPatches
     {
         public static GameObject CurrentPlayerObject { get; private set; }
         public static GameObject PlayerPrefab { get; private set; }
 
-        public static event Action<GameObject>? PlayerSpawned = null;
+        public static event Action<GameObject> PlayerSpawned = null;
 
         [HarmonyPostfix]
         [HarmonyPatch(typeof(PlayerSpawn), "SpawnPlayer")]

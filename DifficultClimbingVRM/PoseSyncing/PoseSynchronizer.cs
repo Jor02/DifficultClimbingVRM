@@ -1,4 +1,5 @@
 ﻿using DifficultClimbingVRM.Extensions;
+using DifficultClimbingVRM.PoseSyncing;
 using System;
 using System.Linq;
 using UnityEngine;

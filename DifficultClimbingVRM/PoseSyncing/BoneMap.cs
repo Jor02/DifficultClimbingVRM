@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace DifficultClimbingVRM
+namespace DifficultClimbingVRM.PoseSyncing
 {
     /// <summary>
     /// A simpler way of representing the vrm bonemap tuple.

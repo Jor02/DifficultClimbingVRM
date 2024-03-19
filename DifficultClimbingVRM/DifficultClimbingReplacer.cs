@@ -7,6 +7,8 @@ using HarmonyLib;
 using System.Threading.Tasks;
 using System.Collections;
 using System.Linq;
+using DifficultClimbingVRM.Patches;
+using DifficultClimbingVRM.PoseSyncing;
 
 namespace DifficultClimbingVRM;
 
@@ -162,7 +164,7 @@ public class DifficultClimbingReplacer : BaseUnityPlugin
     /// </remarks>
     private static void FixMaterials(Vrm10Instance instance)
     {
-        const float brightness = 0.8f;
+        const float brightness = .8f;
         foreach (var material in instance
         .GetComponentsInChildren<Renderer>()
         .SelectMany(renderer => renderer.materials)
