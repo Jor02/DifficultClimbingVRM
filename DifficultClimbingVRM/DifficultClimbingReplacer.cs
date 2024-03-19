@@ -128,6 +128,7 @@ public class DifficultClimbingReplacer : BaseUnityPlugin
         // Adjust height of imported model.
         const float OriginalPlayerHeight = 1.7f; // Height of the in-game climber.
         float playerScale = OriginalPlayerHeight / height; // Calculate the scale the player needs to be multiplied by.
+        playerScale *= currentPlayerModel.Scale.Value; // Apply scale set in configuration
         instance.transform.localScale = Vector3.one * playerScale; // Apply new scale.
 
         // Prevent imported model from being destroyed if the scene were to be reloaded

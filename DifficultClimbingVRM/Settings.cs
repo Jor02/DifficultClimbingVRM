@@ -1,14 +1,10 @@
-﻿using BepInEx;
-using BepInEx.Configuration;
+﻿using BepInEx.Configuration;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Threading.Tasks;
-using System.Xml.Linq;
-using UniGLTF;
 using UnityEngine;
 using UniVRM10;
-using UniVRM10.Migration;
 
 namespace DifficultClimbingVRM
 {
@@ -77,10 +73,15 @@ namespace DifficultClimbingVRM
 
     internal class CustomPlayerModel
     {
+        // Properties
         public string FilePath { get; }
-
         public ConfigEntry<string> Name { get; }
+
+        // Fixes
         public ConfigEntry<bool> OffsetEntireModel { get; }
+
+        // Ajustments
+        public ConfigEntry<float> Scale { get; }
 
         public CustomPlayerModel(string path)
         {
@@ -95,7 +96,8 @@ namespace DifficultClimbingVRM
             ConfigFile modelSettings = new ConfigFile(Path.Combine(Path.ChangeExtension(FilePath, "cfg")), true);
 
             Name = modelSettings.Bind("Info", nameof(Name), Path.GetFileNameWithoutExtension(path), "The name displayed in-game");
-            OffsetEntireModel = modelSettings.Bind("Customization", nameof(OffsetEntireModel), false, "Moves the whole player forward to prevent weird arm bends (will make shadows not match correctly)");
+            OffsetEntireModel = modelSettings.Bind("Customization.Fixes", nameof(OffsetEntireModel), false, "Moves the whole player forward to prevent weird arm bends (will make shadows not match correctly)");
+            Scale = modelSettings.Bind("Customization.Adjustments", nameof(Scale), 1f, "The model scale multiplier");
         }
 
         public Task<Vrm10Instance> Load()

@@ -1,12 +1,8 @@
 ﻿using HarmonyLib;
-using System;
-using System.Collections.Generic;
-using System.Text;
-using UnityEngine;
 
 namespace DifficultClimbingVRM.Patches
 {
-    internal class IKControlPatches
+    internal static class IKControlPatches
     {
         public static float HandSurfaceDistanceL { get; private set; }
         public static float HandSurfaceDistanceR { get; private set; }
