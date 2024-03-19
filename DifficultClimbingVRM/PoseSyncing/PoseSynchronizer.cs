@@ -1,6 +1,7 @@
 ﻿using DifficultClimbingVRM.Extensions;
 using DifficultClimbingVRM.PoseSyncing;
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 
@@ -13,6 +14,7 @@ namespace DifficultClimbingVRM
     {
         // Bones that are always locked to origin animators bone positions
         private HumanBodyBones[] lockedBones = new HumanBodyBones[0];
+        public Dictionary<HumanBodyBones, Vector3> BoneOffsets { get; } = new Dictionary<HumanBodyBones, Vector3>();
 
         // Animators
         public Animator OriginAnimator { get => originAnimator; set { originAnimator = value; reinitialize = true; } }
@@ -30,6 +32,10 @@ namespace DifficultClimbingVRM
 
         // Used to call start again if anything changed any of the animators
         private bool reinitialize = false;
+
+        // Events that are triggered before and after posing, useful for performing modifications for posing
+        public event Action PrePoseCallback = null;
+        public event Action PostPoseCallback = null;
 
         private void Start()
         {
@@ -87,6 +93,8 @@ namespace DifficultClimbingVRM
         /// <param name="positionBones">An array of <see cref="HumanBodyBones"/> specifying which bones should have its positions set.</param>
         private void ApplyPoseFromOriginToTarget(HumanPoseHandler originPoseHandler, HumanPoseHandler targetPoseHandler, Animator targetAnimator, Animator originAnimator, BoneMap[] targetCharacter, HumanBodyBones[] positionBones, AlignmentOptions alignment)
         {
+            PrePoseCallback?.Invoke();
+
             if (originPoseHandler == null || targetPoseHandler == null)
                 return;
 
@@ -105,9 +113,8 @@ namespace DifficultClimbingVRM
             foreach (BoneMap boneMap in targetCharacter)
             {
                 Transform targetBone = boneMap.Transform;
-                Transform originBone = originAnimator.GetBoneTransform(boneMap.Bone);
 
-                if (targetBone != null && originBone != null)
+                if (targetBone != null)
                 {
                     if (boneMap.Bone == HumanBodyBones.Hips)
                     {
@@ -116,10 +123,18 @@ namespace DifficultClimbingVRM
                     }
                     else if (boneMap.Bone.IsOneOf(positionBones))
                     {
-                        targetBone.position = originBone.position;
+                        Transform originBone = originAnimator.GetBoneTransform(boneMap.Bone);
+
+                        if (originBone != null)
+                            targetBone.position = originBone.position;
                     }
+
+                    if (BoneOffsets.TryGetValue(boneMap.Bone, out Vector3 offset))
+                        targetBone.position += offset;
                 }
             }
+
+            PostPoseCallback?.Invoke();
         }
 
         /// <summary>

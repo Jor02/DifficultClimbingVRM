@@ -77,8 +77,10 @@ namespace DifficultClimbingVRM
 
     internal class CustomPlayerModel
     {
-        public ConfigEntry<string> Name { get; }
         public string FilePath { get; }
+
+        public ConfigEntry<string> Name { get; }
+        public ConfigEntry<bool> OffsetEntireModel { get; }
 
         public CustomPlayerModel(string path)
         {
@@ -93,6 +95,7 @@ namespace DifficultClimbingVRM
             ConfigFile modelSettings = new ConfigFile(Path.Combine(Path.ChangeExtension(FilePath, "cfg")), true);
 
             Name = modelSettings.Bind("Info", nameof(Name), Path.GetFileNameWithoutExtension(path), "The name displayed in-game");
+            OffsetEntireModel = modelSettings.Bind("Customization", nameof(OffsetEntireModel), false, "Moves the whole player forward to prevent weird arm bends (will make shadows not match correctly)");
         }
 
         public Task<Vrm10Instance> Load()

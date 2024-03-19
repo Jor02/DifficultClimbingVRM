@@ -19,6 +19,7 @@ public class DifficultClimbingReplacer : BaseUnityPlugin
 
     private string VrmPath;
 
+    private CustomPlayerModel currentPlayerModel;
     private Vrm10Instance playerVRM;
     PoseSynchronizer poseSynchronizer;
 
@@ -83,19 +84,21 @@ public class DifficultClimbingReplacer : BaseUnityPlugin
             return;
 
         PlayerSpawnerPatches.PlayerSpawned += OnPlayerSpawned;
+
         Harmony.CreateAndPatchAll(typeof(PlayerSpawnerPatches));
+        Harmony.CreateAndPatchAll(typeof(IKControlPatches));
     }
 
     public IEnumerator LoadPlayerModel(Animator climber)
     {
-        CustomPlayerModel playerModel = Settings.CurrentPlayerModel;
+        currentPlayerModel = Settings.CurrentPlayerModel;
 
-        if (playerModel == null)
+        if (currentPlayerModel == null)
             yield break;
 
-        Logger.LogInfo($"Loading {playerModel.FilePath}.");
+        Logger.LogInfo($"Loading {currentPlayerModel.FilePath}.");
 
-        Task<Vrm10Instance> instanceTask = playerModel.Load();
+        Task<Vrm10Instance> instanceTask = currentPlayerModel.Load();
 
         // Wait for the model loading task to complete (no idea how necessary a task is since the game still freezes).
         while (!instanceTask.IsCompleted)
@@ -103,16 +106,16 @@ public class DifficultClimbingReplacer : BaseUnityPlugin
             yield return null; // Yield until the next frame.
         }
 
-        if (AssertAndDisable(instanceTask.IsFaulted, $"Failed while trying to load {playerModel.FilePath}"))
+        if (AssertAndDisable(instanceTask.IsFaulted, $"Failed while trying to load {currentPlayerModel.FilePath}"))
             yield break;
 
         // VRM (probably) successfully loaded.
         Vrm10Instance instance = instanceTask.Result;
-        if (AssertAndDisable(instance == null, $"Could not load {playerModel.FilePath}"))
+        if (AssertAndDisable(instance == null, $"Could not load {currentPlayerModel.FilePath}"))
             yield break;
 
         // Mostly just for easier finding in UnityExplorer.
-        instance!.name = playerModel.Name.Value;
+        instance!.name = currentPlayerModel.Name.Value;
 
         // Default toon shaders don't work that well in-game.
         FixMaterials(instance);
@@ -136,9 +139,33 @@ public class DifficultClimbingReplacer : BaseUnityPlugin
 
         // Add pose syncing
         poseSynchronizer = PoseSynchronizer.CreateComponent(playerVRM.gameObject, climber, instance.GetComponent<Animator>(), vrmBoneMap, armBones);
+        poseSynchronizer.PrePoseCallback += PreparePose;
 
         // Stop rendering the main player
         HideClimber();
+    }
+
+    // Offsets either the hands/arms or the entire player to not clip into walls
+    // Not the best solution but good enough for now (feel free to PR a better solution)
+    private void PreparePose()
+    {
+        poseSynchronizer.BoneOffsets.Clear();
+
+        if (currentPlayerModel.OffsetEntireModel.Value)
+        {
+            float smallestDistance = Mathf.Min(IKControlPatches.HandSurfaceDistanceL, IKControlPatches.HandSurfaceDistanceR);
+
+            if (smallestDistance < 0)
+                poseSynchronizer.BoneOffsets[HumanBodyBones.Hips] = Vector3.forward * smallestDistance;
+        }
+        else
+        {
+            poseSynchronizer.BoneOffsets[HumanBodyBones.LeftHand] = Vector3.forward * IKControlPatches.HandSurfaceDistanceL;
+            poseSynchronizer.BoneOffsets[HumanBodyBones.RightHand] = Vector3.forward * IKControlPatches.HandSurfaceDistanceR;
+
+            poseSynchronizer.BoneOffsets[HumanBodyBones.LeftLowerArm] = Vector3.forward * (IKControlPatches.HandSurfaceDistanceL / 2);
+            poseSynchronizer.BoneOffsets[HumanBodyBones.RightLowerArm] = Vector3.forward * (IKControlPatches.HandSurfaceDistanceR / 2);
+        }
     }
 
     /// <summary>
