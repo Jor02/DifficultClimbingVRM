@@ -84,9 +84,19 @@ public class DifficultClimbingReplacer : BaseUnityPlugin
             return;
 
         PlayerSpawnerPatches.PlayerSpawned += OnPlayerSpawned;
+        ClimberMainPatches.HatSpawned += HatSpawned;
 
         Harmony.CreateAndPatchAll(typeof(PlayerSpawnerPatches));
         Harmony.CreateAndPatchAll(typeof(IKControlPatches));
+        Harmony.CreateAndPatchAll(typeof(ClimberMainPatches));
+    }
+
+    private void HatSpawned(GameObject hat)
+    {
+        if (!currentPlayerModel.AllowCrown.Value)
+            hat.SetActive(false);
+
+        hat.transform.localPosition = currentPlayerModel.CrownPosition.Value / 1000f;
     }
 
     public IEnumerator LoadPlayerModel(Animator climber)
