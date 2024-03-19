@@ -88,12 +88,14 @@ public class DifficultClimbingReplacer : BaseUnityPlugin
 
     public IEnumerator LoadPlayerModel(Animator climber)
     {
-        if (Settings.CurrentPlayerModel == null)
+        CustomPlayerModel playerModel = Settings.CurrentPlayerModel;
+
+        if (playerModel == null)
             yield break;
 
-        Logger.LogInfo($"Loading {Settings.CurrentPlayerModel.FilePath}.");
+        Logger.LogInfo($"Loading {playerModel.FilePath}.");
 
-        Task<Vrm10Instance> instanceTask = Settings.CurrentPlayerModel.Load();
+        Task<Vrm10Instance> instanceTask = playerModel.Load();
 
         // Wait for the model loading task to complete (no idea how necessary a task is since the game still freezes).
         while (!instanceTask.IsCompleted)
@@ -101,16 +103,16 @@ public class DifficultClimbingReplacer : BaseUnityPlugin
             yield return null; // Yield until the next frame.
         }
 
-        if (AssertAndDisable(instanceTask.IsFaulted, $"Failed while trying to load {Settings.CurrentPlayerModel.FilePath}"))
+        if (AssertAndDisable(instanceTask.IsFaulted, $"Failed while trying to load {playerModel.FilePath}"))
             yield break;
 
         // VRM (probably) successfully loaded.
         Vrm10Instance instance = instanceTask.Result;
-        if (AssertAndDisable(instance == null, $"Could not load {Settings.CurrentPlayerModel.FilePath}"))
+        if (AssertAndDisable(instance == null, $"Could not load {playerModel.FilePath}"))
             yield break;
 
         // Mostly just for easier finding in UnityExplorer.
-        instance!.name = Settings.CurrentPlayerModel.Name.Value;
+        instance!.name = playerModel.Name.Value;
 
         // Default toon shaders don't work that well in-game.
         FixMaterials(instance);
