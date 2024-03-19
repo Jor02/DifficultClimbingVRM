@@ -21,6 +21,5 @@ namespace DifficultClimbingVRM.Patches
             CurrentPlayerObject = ___p;
             PlayerSpawned?.Invoke(CurrentPlayerObject);
         }
-        //Return type of pass through postfix static bool DifficultClimbingVRM.PlayerSpawnerPatches.SpawnPlayerVRM(UnityEngine.GameObject& ___p) does not match type of its first parameter
     }
 }
