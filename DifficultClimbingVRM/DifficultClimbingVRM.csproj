@@ -4,7 +4,7 @@
     <TargetFramework>netstandard2.1</TargetFramework>
     <AssemblyName>DifficultClimbingVRM</AssemblyName>
     <Description>A Difficult Game About Climbing VRM Model Replacer</Description>
-    <Version>0.2.0</Version>
+    <Version>0.3.0</Version>
     <FileVersion>$(VersionPrefix)</FileVersion>
     <AssemblyVersion>$(VersionPrefix)</AssemblyVersion>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
