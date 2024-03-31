@@ -161,61 +161,6 @@ namespace DifficultClimbingVRM
             var thumbnail = await loader.LoadVrmThumbnailAsync();
             return new Metadata(vrm10Data.VrmExtension.Meta, thumbnail);
         }
-
-        /*
-        private Meta? GetMetadata(string filePath)
-        {
-            byte[] file = File.ReadAllBytes(filePath);
-            var gltfData = new UniGLTF.GlbLowLevelParser(filePath, file).Parse();
-
-            return GetMetadata(gltfData.GLTF.extensions);
-        }
-
-
-        private Meta? GetMetadata(UniGLTF.glTFExtension src)
-        {
-            if (src is UniGLTF.glTFExtensionImport extensions)
-            {
-                foreach (var kv in extensions.ObjectItems())
-                {
-                    if (kv.Key.GetUtf8String() == GltfDeserializer.ExtensionNameUtf8)
-                    {
-                        foreach (var kv2 in kv.Value.ObjectItems())
-                        {
-                            var key = kv2.Key.GetString();
-
-                            if (key == "meta")
-                            {
-                                return GltfDeserializer.Deserialize_Meta(kv2.Value);
-                            }
-                        }
-                    }
-                }
-            }
-
-            return null;
-        }
-
-        private async Task<Texture2D> LoadVrmThumbnailAsync(UniGLTF.GltfData data)
-        {
-            IAwaitCaller awaitCaller = new ImmediateCaller();
-
-            if (!UniGLTF.Extensions.VRMC_vrm.GltfDeserializer.TryGet(data.GLTF.extensions, out var vrm))
-            {
-                return null;
-            }
-
-            if (Vrm10TextureDescriptorGenerator.TryGetMetaThumbnailTextureImportParam(data, vrm, out (SubAssetKey, VRMShaders.TextureDescriptor Param) kv))
-            {
-                var texture = await TextureFactory.GetTextureAsync(kv.Param, awaitCaller);
-                return texture as Texture2D;
-            }
-            else
-            {
-                return null;
-            }
-        }
-        */
     }
 
     public class Metadata
