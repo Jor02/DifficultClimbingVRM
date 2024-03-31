@@ -98,6 +98,9 @@ public class DifficultClimbingReplacer : BaseUnityPlugin
         Harmony.CreateAndPatchAll(typeof(IKControlPatches));
         Harmony.CreateAndPatchAll(typeof(ClimberMainPatches));
         Harmony.CreateAndPatchAll(typeof(PauseMenuPatches));
+
+        // Add the UI to the game if we didn't have it loaded yet
+        ui ??= new GameObject("VRM UI").AddComponent<VrmUi>();
     }
 
     private void HatSpawned(GameObject hat)
@@ -192,9 +195,6 @@ public class DifficultClimbingReplacer : BaseUnityPlugin
 
         // Stop rendering the main player
         HideClimber();
-
-        // Add the UI to the game if we didn't have it loaded yet
-        ui ??= new GameObject("VRM UI").AddComponent<VrmUi>();
     }
 
     private void DestroyCurrentPlayer()

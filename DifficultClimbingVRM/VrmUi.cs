@@ -34,7 +34,33 @@ namespace DifficultClimbingVRM
         }
         private Texture2D noIcon;
 
-        private void Awake()
+        private void ChangeVrmPath()
+        {
+            // Not yet implemented as I don't have to time to find a Unity compatable way of opening folder dialogues.
+        }
+
+        private void OpenVrmPath()
+        {
+            // I don't think any other platform than Windows has 'explorer.exe' but I could be wrong.
+            if (Application.platform == RuntimePlatform.WindowsPlayer && Directory.Exists(Settings.VRMPath.Value))
+            {
+                System.Diagnostics.ProcessStartInfo startInfo = new System.Diagnostics.ProcessStartInfo
+                {
+                    Arguments = Settings.VRMPath.Value,
+                    FileName = "explorer.exe"
+                };
+
+                System.Diagnostics.Process.Start(startInfo);
+            }
+        }
+
+        private void ReloadModels()
+        {
+            Settings.LoadPlayerModels();
+            GenerateButtons();
+        }
+
+        private void Start()
         {
             AssetBundle bundle = AssetBundle.LoadFromMemory(Properties.Resources.vrmui);
             GameObject uiObject = Instantiate(bundle.LoadAsset<GameObject>("VRM UI"));
@@ -64,35 +90,14 @@ namespace DifficultClimbingVRM
 
             PauseMenuPatches.PauseMenuOpened += PauseMenuOpened;
             PauseMenuPatches.PauseMenuClosed += PauseMenuOpened;
+
+            CreateVrmButton();
         }
-
-        private void ChangeVrmPath()
-        {
-            // Not yet implemented as I don't have to time to find a Unity compatable way of opening folder dialogues.
-        }
-
-        private void OpenVrmPath()
-        {
-            // I don't think any other platform than Windows has 'explorer.exe' but I could be wrong.
-            if (Application.platform == RuntimePlatform.WindowsPlayer && Directory.Exists(Settings.VRMPath.Value))
-            {
-                System.Diagnostics.ProcessStartInfo startInfo = new System.Diagnostics.ProcessStartInfo
-                {
-                    Arguments = Settings.VRMPath.Value,
-                    FileName = "explorer.exe"
-                };
-
-                System.Diagnostics.Process.Start(startInfo);
-            }
-        }
-
-        private void ReloadModels()
-        {
-            Settings.LoadPlayerModels();
-            GenerateButtons();
-        }
-
-        private void Start()
+        
+        /// <summary>
+        /// Adds the 'VRM' button to the pause menu
+        /// </summary>
+        private void CreateVrmButton()
         {
             //Create button to open UI
             GameObject menuCanvas = GameObject.Find("PauseMenuCanvas");
