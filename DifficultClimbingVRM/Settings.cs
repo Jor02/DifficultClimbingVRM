@@ -3,12 +3,12 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Threading.Tasks;
+using UniGLTF.Extensions.VRMC_vrm;
 using UnityEngine;
 using UniVRM10;
 
 namespace DifficultClimbingVRM
 {
-
     internal static class Settings
     {
 #nullable enable
@@ -18,6 +18,8 @@ namespace DifficultClimbingVRM
         public static List<CustomPlayerModel> PlayerModels { get; } = new List<CustomPlayerModel>();
 
         public static CustomPlayerModel? CurrentPlayerModel { get; private set; }
+
+        public static bool ModelIsLoaded { get; private set; } = false;
 
         public static void Initialize(ConfigFile config)
         {
@@ -35,6 +37,9 @@ namespace DifficultClimbingVRM
 
         public static void LoadPlayerModels()
         {
+            ModelIsLoaded = false;
+            PlayerModels.Clear();
+
             if (VRMPath == null || CurrentCharacter == null)
                 return;
 
@@ -60,14 +65,21 @@ namespace DifficultClimbingVRM
 
             if (CurrentPlayerModel == null && PlayerModels.Count > 0)
                 SetActiveModel(PlayerModels[0]);
+
+            ModelIsLoaded = true;
         }
 
         public static void SetActiveModel(CustomPlayerModel model)
         {
             CurrentPlayerModel = model;
 
-            if (VRMPath != null && CurrentCharacter != null)
-                CurrentCharacter.Value = Path.GetRelativePath(VRMPath.Value, model.FilePath);
+            if (CurrentCharacter != null)
+            {
+                if (VRMPath != null && model != null)
+                    CurrentCharacter.Value = Path.GetRelativePath(VRMPath.Value, model.FilePath);
+                else
+                    CurrentCharacter.Value = null;
+            }
         }
     }
 
@@ -76,6 +88,24 @@ namespace DifficultClimbingVRM
         // Properties
         public string FilePath { get; }
         public ConfigEntry<string> Name { get; }
+        public Metadata? Metadata {
+            get
+            {
+                if (!hasMeta)
+                {
+                    try
+                    {
+                        meta = GetMetadata(FilePath).Result;
+                    }
+                    catch (FileLoadException ex) { Debug.LogError(string.Format("Failed to load data for {0}", ex.FileName)); }
+                    hasMeta = true;
+                }
+
+                return meta;
+            }
+        }
+        private Metadata? meta;
+        private bool hasMeta;
 
         // Fixes
         public ConfigEntry<bool> OffsetEntireModel { get; }
@@ -115,6 +145,88 @@ namespace DifficultClimbingVRM
         public Task<Vrm10Instance> Load()
         {
             return Vrm10.LoadPathAsync(FilePath, controlRigGenerationOption: ControlRigGenerationOption.None);
+        }
+
+        private async Task<Metadata?> GetMetadata(string filePath)
+        {
+            byte[] file = File.ReadAllBytes(filePath);
+            var gltfData = new UniGLTF.GlbLowLevelParser(filePath, file).Parse();
+
+            Vrm10Data vrm10Data = Vrm10Data.Parse(gltfData); // ?? throw new FileLoadException("Could not load VRM data " + filePath, filePath);
+
+            if (vrm10Data == null)
+                return null;
+
+            using var loader = new Vrm10Importer(vrm10Data);
+            var thumbnail = await loader.LoadVrmThumbnailAsync();
+            return new Metadata(vrm10Data.VrmExtension.Meta, thumbnail);
+        }
+
+        /*
+        private Meta? GetMetadata(string filePath)
+        {
+            byte[] file = File.ReadAllBytes(filePath);
+            var gltfData = new UniGLTF.GlbLowLevelParser(filePath, file).Parse();
+
+            return GetMetadata(gltfData.GLTF.extensions);
+        }
+
+
+        private Meta? GetMetadata(UniGLTF.glTFExtension src)
+        {
+            if (src is UniGLTF.glTFExtensionImport extensions)
+            {
+                foreach (var kv in extensions.ObjectItems())
+                {
+                    if (kv.Key.GetUtf8String() == GltfDeserializer.ExtensionNameUtf8)
+                    {
+                        foreach (var kv2 in kv.Value.ObjectItems())
+                        {
+                            var key = kv2.Key.GetString();
+
+                            if (key == "meta")
+                            {
+                                return GltfDeserializer.Deserialize_Meta(kv2.Value);
+                            }
+                        }
+                    }
+                }
+            }
+
+            return null;
+        }
+
+        private async Task<Texture2D> LoadVrmThumbnailAsync(UniGLTF.GltfData data)
+        {
+            IAwaitCaller awaitCaller = new ImmediateCaller();
+
+            if (!UniGLTF.Extensions.VRMC_vrm.GltfDeserializer.TryGet(data.GLTF.extensions, out var vrm))
+            {
+                return null;
+            }
+
+            if (Vrm10TextureDescriptorGenerator.TryGetMetaThumbnailTextureImportParam(data, vrm, out (SubAssetKey, VRMShaders.TextureDescriptor Param) kv))
+            {
+                var texture = await TextureFactory.GetTextureAsync(kv.Param, awaitCaller);
+                return texture as Texture2D;
+            }
+            else
+            {
+                return null;
+            }
+        }
+        */
+    }
+
+    public class Metadata
+    {
+        public Meta Meta { get; }
+        public Texture2D Thumbnail { get; }
+
+        public Metadata(Meta meta, Texture2D thumbnail)
+        {
+            Meta = meta;
+            Thumbnail = thumbnail;
         }
     }
 #nullable disable

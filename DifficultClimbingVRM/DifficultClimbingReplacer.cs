@@ -1,5 +1,4 @@
 ﻿using BepInEx;
-using System.IO;
 using UnityEngine;
 using UniVRM10;
 using UniGLTF;
@@ -15,9 +14,9 @@ namespace DifficultClimbingVRM;
 [BepInPlugin(PluginInfo.PluginGuid, MyPluginInfo.PLUGIN_NAME, MyPluginInfo.PLUGIN_VERSION)]
 public class DifficultClimbingReplacer : BaseUnityPlugin
 {
-    private readonly HumanBodyBones[] armBones = [HumanBodyBones.Hips, HumanBodyBones.LeftUpperArm, HumanBodyBones.LeftLowerArm, HumanBodyBones.LeftHand, HumanBodyBones.RightUpperArm, HumanBodyBones.RightLowerArm, HumanBodyBones.RightHand];
+    public static DifficultClimbingReplacer Instance { get; private set; }
 
-    private string VrmPath;
+    private readonly HumanBodyBones[] armBones = [HumanBodyBones.Hips, HumanBodyBones.LeftUpperArm, HumanBodyBones.LeftLowerArm, HumanBodyBones.LeftHand, HumanBodyBones.RightUpperArm, HumanBodyBones.RightLowerArm, HumanBodyBones.RightHand];
 
     private CustomPlayerModel currentPlayerModel;
     private Vrm10Instance playerVRM;
@@ -26,26 +25,30 @@ public class DifficultClimbingReplacer : BaseUnityPlugin
     GameObject cloth;
     SkinnedMeshRenderer bodyMesh;
 
+    private VrmUi ui;
+
+    private Animator climberAnimator;
+
     private void OnPlayerSpawned(GameObject player)
     {
         Logger.LogInfo("Player spawned.");
 
         Transform climber = player.transform.Find("Climber_Hero_Body_Prefab");
-        Animator climberAnimator = climber.GetComponent<Animator>();
+        climberAnimator = climber.GetComponent<Animator>();
 
-        if (AssertAndDisable(climber == null, "Couldn't fetch player"))
+        if (Assert(climber == null, "Couldn't fetch player"))
             return;
 
         // Get the cloth
         cloth = climber!.transform.Find("HeroCharacter/BumCoverCloth").gameObject;
 
         Transform body = climber!.transform.Find("HeroCharacter/Body");
-        if (AssertAndDisable(body == null, "Couldn't fetch body"))
+        if (Assert(body == null, "Couldn't fetch body"))
             return;
 
         bodyMesh = body!.GetComponent<SkinnedMeshRenderer>();
 
-        if (AssertAndDisable(bodyMesh == null, "Couldn't fetch body renderer"))
+        if (Assert(bodyMesh == null, "Couldn't fetch body renderer"))
             return;
 
         // Some null reference checking (just in case other mods break something)
@@ -73,22 +76,28 @@ public class DifficultClimbingReplacer : BaseUnityPlugin
 
     private void Awake()
     {
+        if (Instance != null)
+        {
+            Destroy(this);
+            return;
+        }
+        Instance = this;
+
         // Plugin loaded notification
         Logger.LogInfo($"Plugin {MyPluginInfo.PLUGIN_GUID} is loaded!");
 
         //Initialize configuration settings (and create player model directory)
         Settings.Initialize(Config);
 
-        VrmPath = Settings.VRMPath.Value;
-        if (AssertAndDisable(!Directory.Exists(VrmPath), "Could not create VRM folder"))
-            return;
-
+        // Subscribe to some methods from the game
         PlayerSpawnerPatches.PlayerSpawned += OnPlayerSpawned;
         ClimberMainPatches.HatSpawned += HatSpawned;
 
+        // Hook into some useful methods
         Harmony.CreateAndPatchAll(typeof(PlayerSpawnerPatches));
         Harmony.CreateAndPatchAll(typeof(IKControlPatches));
         Harmony.CreateAndPatchAll(typeof(ClimberMainPatches));
+        Harmony.CreateAndPatchAll(typeof(PauseMenuPatches));
     }
 
     private void HatSpawned(GameObject hat)
@@ -99,12 +108,37 @@ public class DifficultClimbingReplacer : BaseUnityPlugin
         hat.transform.localPosition = currentPlayerModel.CrownPosition.Value / 1000f;
     }
 
-    public IEnumerator LoadPlayerModel(Animator climber)
+
+    private Coroutine currentPlayerLoad; // Prevent multiple models from being loaded at the same time.
+    public IEnumerator ReplacePlayerModel()
+    {
+        // Stop loading player if currently loading one
+        if (currentPlayerLoad != null)
+        {
+            StopCoroutine(currentPlayerLoad);
+
+            // Wait for requested player load to finish
+            if (currentPlayerLoad != null)
+                yield return currentPlayerLoad;
+        }
+
+        currentPlayerLoad = StartCoroutine(LoadPlayerModel(climberAnimator));
+        yield return currentPlayerLoad;
+    }
+
+    private IEnumerator LoadPlayerModel(Animator climber)
     {
         currentPlayerModel = Settings.CurrentPlayerModel;
 
+        // No player model selected (use default character)
         if (currentPlayerModel == null)
+        {
+            Logger.LogInfo($"Disabling custom player.");
+
+            DestroyCurrentPlayer();
+            ShowClimber();
             yield break;
+        }
 
         Logger.LogInfo($"Loading {currentPlayerModel.FilePath}.");
 
@@ -116,16 +150,24 @@ public class DifficultClimbingReplacer : BaseUnityPlugin
             yield return null; // Yield until the next frame.
         }
 
-        if (AssertAndDisable(instanceTask.IsFaulted, $"Failed while trying to load {currentPlayerModel.FilePath}"))
+        // Halt execution if model was unable to load
+        if (Assert(instanceTask.IsFaulted, $"Failed while trying to load {currentPlayerModel.FilePath}"))
             yield break;
 
         // VRM (probably) successfully loaded.
         Vrm10Instance instance = instanceTask.Result;
-        if (AssertAndDisable(instance == null, $"Could not load {currentPlayerModel.FilePath}"))
+        if (Assert(instance == null, $"Could not load {currentPlayerModel.FilePath}"))
             yield break;
 
-        // Mostly just for easier finding in UnityExplorer.
+        // Rename the model mostly to be easier to find in UnityExplorer.
         instance!.name = currentPlayerModel.Name.Value;
+
+        // Destroy the current custom player model if it exists
+        DestroyCurrentPlayer();
+
+        // Make some references
+        playerVRM = instance;
+        BoneMap[] vrmBoneMap = instance.Humanoid.BoneMap.Select(x => (BoneMap)x).ToArray();
 
         // Default toon shaders don't work that well in-game.
         FixMaterials(currentPlayerModel, instance);
@@ -144,24 +186,41 @@ public class DifficultClimbingReplacer : BaseUnityPlugin
         // Prevent imported model from being destroyed if the scene were to be reloaded
         DontDestroyOnLoad(instance.gameObject);
 
-        // Some references
-        playerVRM = instance;
-        BoneMap[] vrmBoneMap = instance.Humanoid.BoneMap.Select(x => (BoneMap)x).ToArray();
-
         // Add pose syncing
         poseSynchronizer = PoseSynchronizer.CreateComponent(playerVRM.gameObject, climber, instance.GetComponent<Animator>(), vrmBoneMap, armBones);
         poseSynchronizer.PrePoseCallback += PreparePose;
 
         // Stop rendering the main player
         HideClimber();
+
+        // Add the UI to the game if we didn't have it loaded yet
+        ui ??= new GameObject("VRM UI").AddComponent<VrmUi>();
+    }
+
+    private void DestroyCurrentPlayer()
+    {
+        if (playerVRM != null)
+        {
+            Destroy(playerVRM.gameObject);
+            Destroy(poseSynchronizer);
+        }
     }
 
     // Offsets either the hands/arms or the entire player to not clip into walls
     // Not the best solution but good enough for now (feel free to PR a better solution)
     private void PreparePose()
     {
+        // Destroy the pose synchronizer if we aren't supposed to have one
+        if (currentPlayerModel == null)
+        {
+            Destroy(poseSynchronizer);
+            return;
+        }
+
+        // Clear previous bone offsets since they're probably outdated
         poseSynchronizer.BoneOffsets.Clear();
 
+        // Apply offsets determined in the models configuration file
         if (currentPlayerModel.OffsetEntireModel.Value)
         {
             float smallestDistance = Mathf.Min(IKControlPatches.HandSurfaceDistanceL, IKControlPatches.HandSurfaceDistanceR);
@@ -220,12 +279,11 @@ public class DifficultClimbingReplacer : BaseUnityPlugin
         }
     }
 
-    public bool AssertAndDisable(bool assertion, string error)
+    public bool Assert(bool assertion, string error)
     {
         if (assertion)
         {
             Logger.LogError(error);
-            enabled = false;
             return true;
         }
         return false;
