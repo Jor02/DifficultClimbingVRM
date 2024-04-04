@@ -175,6 +175,7 @@ namespace DifficultClimbingVRM
         }
 
         private bool wasPaused = false;
+        private bool wasDeafened = false;
         /// <summary>
         /// Opens the model selector
         /// </summary>
@@ -183,6 +184,9 @@ namespace DifficultClimbingVRM
             isOpen = true;
 
             wasPaused = PauseMenu.GameIsPaused;
+            wasDeafened = AudioListener.pause;
+
+            AudioListener.pause = true;
             PauseMenu.GameIsPaused = true;
 
             ui.rootVisualElement.style.display = DisplayStyle.Flex;
@@ -199,6 +203,7 @@ namespace DifficultClimbingVRM
         public void CloseMenu()
         {
             isOpen = false;
+            AudioListener.pause = wasDeafened;
             PauseMenu.GameIsPaused = wasPaused;
 
             ui.rootVisualElement.style.display = DisplayStyle.None;
