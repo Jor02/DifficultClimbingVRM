@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using TMPro;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 using UnityEngine.UIElements;
 
 namespace DifficultClimbingVRM
@@ -13,6 +14,8 @@ namespace DifficultClimbingVRM
 
         private bool isOpen;
         private bool hasGeneratedButtons;
+
+        private GameObject vrmButton;
 
         readonly List<TemplateContainer> buttons = new List<TemplateContainer>();
 
@@ -36,7 +39,7 @@ namespace DifficultClimbingVRM
 
         private void ChangeVrmPath()
         {
-            // Not yet implemented as I don't have to time to find a Unity compatable way of opening folder dialogues.
+            // Not yet implemented as I don't have the time to find a Unity compatable way of opening folder dialogues.
         }
 
         private void OpenVrmPath()
@@ -62,6 +65,8 @@ namespace DifficultClimbingVRM
 
         private void Start()
         {
+            DontDestroyOnLoad(gameObject);
+
             AssetBundle bundle = AssetBundle.LoadFromMemory(Properties.Resources.vrmui);
             GameObject uiObject = Instantiate(bundle.LoadAsset<GameObject>("VRM UI"));
             DontDestroyOnLoad(uiObject);
@@ -91,14 +96,30 @@ namespace DifficultClimbingVRM
             PauseMenuPatches.PauseMenuOpened += PauseMenuOpened;
             PauseMenuPatches.PauseMenuClosed += PauseMenuOpened;
 
+            SceneManager.sceneLoaded += SceneLoaded;
             CreateVrmButton();
         }
-        
+
+        /// <summary>
+        /// Start a coroutine for Unity's 'sceneLoaded' event
+        /// </summary>
+        private void SceneLoaded(Scene arg0, LoadSceneMode arg1)
+        {
+            // No need to create a new button if it didn't get destroyed
+            if (vrmButton != null)
+                return;
+
+            // Create our button
+            CreateVrmButton();
+        }
+
         /// <summary>
         /// Adds the 'VRM' button to the pause menu
         /// </summary>
         private void CreateVrmButton()
         {
+            Debug.Log("Creating VRM button");
+
             //Create button to open UI
             GameObject menuCanvas = GameObject.Find("PauseMenuCanvas");
             GameObject pauseButton = menuCanvas.transform.Find("PauseMenu/RESUME").gameObject;
@@ -107,7 +128,11 @@ namespace DifficultClimbingVRM
             newButtonPos.x = 1778.582f; // Hardcoded positions would never betray me right?
 
             const string vrmName = "VRM";
-            GameObject vrmButton = Instantiate(pauseButton, newButtonPos, pauseButton.transform.rotation, pauseButton.transform.parent);
+
+            if (vrmButton != null)
+                Destroy(vrmButton);
+
+            vrmButton = Instantiate(pauseButton, newButtonPos, pauseButton.transform.rotation, pauseButton.transform.parent);
             vrmButton.name = vrmName;
             vrmButton.transform.GetChild(0).GetComponent<TextMeshProUGUI>().text = vrmName;
 
