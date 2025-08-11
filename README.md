@@ -5,7 +5,7 @@
 # Difficult Climbing VRM
 ![GitHub code size in bytes](https://img.shields.io/github/languages/code-size/Jor02/DifficultClimbingVRM?style=flat-square&color=brightgreen)
 ![Lines of code](https://img.shields.io/tokei/lines/github/Jor02/DifficultClimbingVRM?style=flat-square)
-> _A mod for [ADGAC](https://store.steampowered.com/app/2497920/A_Difficult_Game_About_Climbing) replace the player with any VRM model_<br>
+> _A mod for [ADGAC](https://store.steampowered.com/app/2497920/A_Difficult_Game_About_Climbing) to replace the player with any VRM model_<br>
 
 ## Installation
 - [Get latest release here](https://github.com/Jor02/DifficultClimbingVRM/releases/latest)
